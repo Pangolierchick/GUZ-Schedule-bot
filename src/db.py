@@ -45,7 +45,7 @@ class guzDB:
     def connect_to_db(self):
         log.info('Connecting to base ...')
         try:
-            self.dbase = sqlite3.connect('../data/guz_arch_schedule.db')
+            self.dbase = sqlite3.connect('../data/guz_arch_schedule.db', check_same_thread=False)
         except Exception as e:
             log.exception(f'Connection to data base failed {str(e)}')
 
@@ -66,6 +66,14 @@ class guzDB:
             self.cur.executescript(sql)
         except Exception as e:
             log.exception("Creating table failed.")
+    
+    def get_today_schedule(self):
+        today = str(date.today()).split('-')
+        year  = int(today[0])
+        month = int(today[1])
+        day   = int(today[2])
+
+        return self.get_schedule_by_date(f'{day}-{month}-{year}')
     
     def update_schedule_by_date(self, date:str, schedule:str) -> None:
         log.info(f'Updatting schedule at {date}')
@@ -121,4 +129,4 @@ def updateEveryWeek(dbase:guzDB):
     while True:
         log.info("Reloading the base")
         dbase.load_default_schedule('../data/default.csv')
-        time.sleep(604800)
+        time.sleep(604800) # every week
