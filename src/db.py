@@ -3,6 +3,7 @@ import logging as log
 from calendar import Calendar
 from schedule import Schedule 
 from datetime import date
+import time
 
 def getCurrentWeek():
     calendar = Calendar(0)
@@ -115,3 +116,9 @@ class guzDB:
         for w, i in enumerate(week):
             year, month, day = i[0], i[1], i[2]
             self.set_schedule_by_date(f'{day}-{month}-{year}', schedule.getByDay(w))
+
+def updateEveryWeek(dbase:guzDB):
+    while True:
+        log.info("Reloading the base")
+        dbase.load_default_schedule('../data/default.csv')
+        time.sleep(604800)
