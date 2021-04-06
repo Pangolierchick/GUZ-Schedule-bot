@@ -185,7 +185,3 @@ class GroupSchedule:
     
     def print(self):
         print(str(self))
-
-schedule = GroupSchedule('21A', 1)
-schedule.get_from_file('./test.csv')
-schedule.print()
