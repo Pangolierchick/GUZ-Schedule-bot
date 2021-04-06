@@ -202,7 +202,7 @@ def schedule_checker():
 
 
 schedule.every().day.at("07:30").do(morning_send_schedule)
-schedule.every().monday.at("05:30").do(db.updateEveryWeek, dbase=dbase)
+# schedule.every().monday.at("05:30").do(db.updateEveryWeek, dbase=dbase)
 
 threading.Thread(target=schedule_checker).start()
 
