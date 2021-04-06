@@ -1,9 +1,13 @@
 HOLIDAY_STR = ['Holiday', 'Выходной']
 DAY_OF_WEEK_MAP_US = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 DAY_OF_WEEK_MAP_RU = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+TIME_MAP = {"8:30-10:00": 1, "10:10-11:40": 2, "11:50-13:20": 3, "14:00-15:30": 4, "15:40-17:10": 5, "17:20-18:50": 6}
 
 def numToWeekDayStr(num:int):
     return DAY_OF_WEEK_MAP_RU[num]
+
+def timeToNum(time:str):
+    return TIME_MAP[time]
 
 class ScheduleRecord:
     def __init__(self, b_time:str, e_time:str, subject_a:str, subject_b:str=None):

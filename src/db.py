@@ -1,7 +1,7 @@
 import sqlite3
 import logging as log
 from calendar import Calendar
-from myschedule import Schedule 
+from myschedule import Schedule, timeToNum
 from datetime import date
 import time
 
@@ -54,7 +54,7 @@ class guzDB:
         try:
             self.cur.execute(sql)
         except Exception as e:
-            log.exception("failed table emptyness checking")
+            log.exception("failed table emptiness checking")
         
         table = self.cur.fetchall()
         if len(table) == 0:
@@ -211,7 +211,7 @@ class guzDB:
             need_s = s.split('|')[group].strip()
 
             if len(need_s) > 0:
-                group_sch += f'{t:<12} {need_s:<50}\n'
+                group_sch += f'Пара {timeToNum(t)} {t:<12} {need_s:<50}\n'
         
         return group_sch
 
