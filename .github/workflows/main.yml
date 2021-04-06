@@ -2,7 +2,7 @@ name: Formatting python code
 on:
   push:
     paths:
-    - '**.py'
+    - '.src/**.py'
 jobs:
   autoyapf:
     runs-on: ubuntu-latest
