@@ -8,7 +8,11 @@ import time
 def getCurrentWeek():
     calendar = Calendar(0)
 
-    today = str(date.today()).split('-')
+    today = date.today()
+    week_day = today.weekday()
+    today = today.replace(day=today.day - week_day)
+
+    today = str(today.isoformat()).split('-')
     year  = int(today[0])
     month = int(today[1])
     day   = int(today[2])
@@ -19,7 +23,7 @@ def getCurrentWeek():
     
     for i, v in enumerate(month_list):
         if (v[0] == year and v[1] == month and v[2] == day):
-            for k in range(7):
+            for k in range(5):
                 week.append(month_list[i + k])
             
             return week
@@ -32,7 +36,8 @@ class guzDB:
             self.connect_to_db()
             self.get_cur()
 
-            self.create_table()
+            self.create_arch_table()
+            self.create_users_table()
 
             guzDB.instance = self
         else:
@@ -53,19 +58,59 @@ class guzDB:
         self.cur = self.dbase.cursor()
         return self.cur
     
-    def create_table(self):
-        log.info("Creating table.")
+    def set_user(self, id, name, group):
+        log.info(f"Inserting user {id}")
+
+        sql = 'INSERT INTO users(id, name, group_id) VALUES(?, ?, ?)'
+
+        try:
+            self.cur.execute(sql, (id, name, group))
+            self.dbase.commit()
+        except:
+            log.exception("Inserting failed")
+    
+    def get_user(self, id):
+        sql = f'SELECT * FROM users WHERE id = {id};'
+
+        try:
+            self.cur.executescript(sql)
+        except Exception as e:
+            log.exception(f"Get user failed {str(e)}.")
+        
+        return self.cur.fetchone()
+    
+    def create_arch_table(self):
+        log.info("Creating arch table.")
         sql = '''
             CREATE TABLE IF NOT EXISTS arch (
             rowid INTEGER PRIMARY KEY,
             date TEXT NOT NULL,
-            schedule TEXT)
-              '''
+            schedule TEXT);
+            '''
 
         try:
             self.cur.executescript(sql)
         except Exception as e:
             log.exception("Creating table failed.")
+        
+        self.dbase.commit()
+    
+    def create_users_table(self):
+        log.info("Creating users table.")
+        sql = '''
+            CREATE TABLE IF NOT EXISTS users (
+            rowid INTEGER PRIMARY KEY,
+            id INTEGER,
+            name TEXT NOT NULL,
+            group_id INTEGER);
+            '''
+
+        try:
+            self.cur.executescript(sql)
+        except Exception as e:
+            log.exception("Creating table failed.")
+        
+        self.dbase.commit()
     
     def get_today_schedule(self):
         today = str(date.today()).split('-')
@@ -119,14 +164,27 @@ class guzDB:
         schedule = Schedule()
         schedule.parse_schedule_file(filename)
 
-        week = getCurrentWeek()
+        week = getCurrentWeek()[:5]
+
+        print(week)
 
         for w, i in enumerate(week):
             year, month, day = i[0], i[1], i[2]
             self.set_schedule_by_date(f'{day}-{month}-{year}', schedule.getByDay(w))
 
-def updateEveryWeek(dbase:guzDB):
+def updateEveryWeek(dbase:guzDB): # FIXME What if we reload in the middle of the week??
     while True:
         log.info("Reloading the base")
-        dbase.load_default_schedule('../data/default.csv')
+
+        my_date = date.today()
+        _, week_num, __ = my_date.isocalendar()
+
+        if week_num % 2 == 0:
+            filename = '../data/upper.csv'
+        else:
+            filename = '../data/lower.csv'
+        
+        log.info(f"Loading {filename} file")
+
+        dbase.load_default_schedule(filename)
         time.sleep(604800) # every week

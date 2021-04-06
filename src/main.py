@@ -6,7 +6,7 @@ import re
 import utils
 
 API_TOKEN = '1716037279:AAEg3jW-K9bY_Hsd7nRSwRevhLE1l8Bs8Xc'
-log.basicConfig(filename="../data/guz.log", format='%(asctime)s [ %(levelname)s ] %(message)s', datefmt='[ %d-%m-%y %H:%M:%S ] ')
+log.basicConfig(filename="../data/guz.log", level=log.INFO, format='%(asctime)s [ %(levelname)s ] %(message)s', datefmt='[ %d-%m-%y %H:%M:%S ] ')
 
 dbase = db.guzDB()
 
@@ -19,6 +19,12 @@ def help_handler(message):
 
 @bot.message_handler(commands=['today'])
 def get_today_schedule_handler(message):
+    user = dbase.get_user(message.from_user.id)
+
+    if user is None:
+        bot.reply_to(message, 'Вы не зарегестрированы.')
+        return
+    
     today = dbase.get_today_schedule()[2]
     today = today.replace(' ; ', '\n')
     bot.reply_to(message, today)
@@ -30,9 +36,9 @@ def get_schedule_by_date_handler(message):
 
 @bot.message_handler(commands=['change'])
 def set_schedule_by_date_handler(message):
-    pass
+    bot.send_message(message.chat.id, 'TODO_CHANGE')
 
-@bot.message_handler(regexp='\d+.\d+.\d+')
+@bot.message_handler(regexp='\d+\.\d+\.\d+')
 def handle_message(message):
     bot.reply_to(message, "Сейчас отправлю расписание.")
 
@@ -53,7 +59,7 @@ def handle_message(message):
 def input_date_get_sch(message):
     text = message.text
 
-    if re.match('\d+.\d+.\d+', text):
+    if re.match('\d+\.\d+\.\d+', text):
         req = utils.format_time(message.text)
         sch = dbase.get_schedule_by_date(req)[2]
         msg = sch.replace(' ; ', '\n')
@@ -61,6 +67,10 @@ def input_date_get_sch(message):
     else:
         msg = 'Неправильно указана дата, попробуйте еще раз'
     bot.send_message(message.chat.id, msg)
+
+@bot.message_handler(commands=['register'])
+def register_user(message):
+    pass
 
 update_db = threading.Thread(target=db.updateEveryWeek, args=(dbase, ), daemon=True, name='WeekUpdater')
 
