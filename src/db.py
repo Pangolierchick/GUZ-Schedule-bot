@@ -5,6 +5,7 @@ from myschedule import Schedule, timeToNum
 from datetime import date
 import time
 
+
 def getCurrentWeek():
     calendar = Calendar(0)
 
@@ -13,24 +14,25 @@ def getCurrentWeek():
     today = today.replace(day=today.day - week_day)
 
     today = str(today.isoformat()).split('-')
-    year  = int(today[0])
+    year = int(today[0])
     month = int(today[1])
-    day   = int(today[2])
+    day = int(today[2])
 
     month_list = [i for i in calendar.itermonthdays3(year, month)]
 
     week = []
-    
+
     for i, v in enumerate(month_list):
         if (v[0] == year and v[1] == month and v[2] == day):
             for k in range(5):
                 week.append(month_list[i + k])
-            
+
             return week
 
 
 class guzDB:
     instance = None
+
     def __init__(self):
         if self.instance is None:
             self.connect_to_db()
@@ -44,10 +46,10 @@ class guzDB:
             guzDB.instance = self
         else:
             print("Error: this class is singleton")
-    
+
     def getInstance(self):
         return guzDB.instance
-        
+
     def isTableEmpty(self):
         sql = 'SELECT * FROM arch'
 
@@ -55,7 +57,7 @@ class guzDB:
             self.cur.execute(sql)
         except Exception as e:
             log.exception("failed table emptiness checking")
-        
+
         table = self.cur.fetchall()
         if len(table) == 0:
             updateEveryWeek(self)
@@ -63,14 +65,16 @@ class guzDB:
     def connect_to_db(self):
         log.info('Connecting to base ...')
         try:
-            self.dbase = sqlite3.connect('../data/guz_arch_schedule.db', check_same_thread=False)
+            self.dbase = sqlite3.connect(
+                '../data/guz_arch_schedule.db',
+                check_same_thread=False)
         except Exception as e:
             log.exception(f'Connection to data base failed {str(e)}')
 
     def get_cur(self):
         self.cur = self.dbase.cursor()
         return self.cur
-    
+
     def get_all_users(self):
         sql = f'SELECT * FROM users'
 
@@ -78,9 +82,9 @@ class guzDB:
             self.cur.execute(sql)
         except Exception as e:
             log.exception(f"Get all users failed {str(e)}")
-        
+
         return self.cur.fetchall()
-    
+
     def delete_user(self, id):
         log.info(f"Deleting user {id}")
 
@@ -89,9 +93,9 @@ class guzDB:
         try:
             self.cur.execute(sql)
             self.dbase.commit()
-        except:
+        except BaseException:
             log.exception("Inserting failed")
-    
+
     def set_user(self, id, name, group):
         log.info(f"Inserting user {id}")
 
@@ -100,9 +104,9 @@ class guzDB:
         try:
             self.cur.execute(sql, (id, name, group))
             self.dbase.commit()
-        except:
+        except BaseException:
             log.exception("Inserting failed")
-    
+
     def get_user(self, id):
         sql = f'SELECT * FROM users WHERE id = {id};'
 
@@ -111,8 +115,7 @@ class guzDB:
             return self.cur.fetchone()
         except Exception as e:
             log.exception(f"Get user failed {str(e)}.")
-        
-    
+
     def create_arch_table(self):
         log.info("Creating arch table.")
         sql = '''
@@ -126,9 +129,9 @@ class guzDB:
             self.cur.executescript(sql)
         except Exception as e:
             log.exception("Creating table failed.")
-        
+
         self.dbase.commit()
-    
+
     def create_users_table(self):
         log.info("Creating users table.")
         sql = '''
@@ -143,20 +146,21 @@ class guzDB:
             self.cur.executescript(sql)
         except Exception as e:
             log.exception("Creating table failed.")
-        
+
         self.dbase.commit()
-    
+
     def get_today_schedule(self, group=0):
         today = str(date.today()).split('-')
-        year  = int(today[0])
+        year = int(today[0])
         month = int(today[1])
-        day   = int(today[2])
+        day = int(today[2])
 
-        string = self.get_group_schedule_by_date(f'{day}-{month}-{year}', group)
+        string = self.get_group_schedule_by_date(
+            f'{day}-{month}-{year}', group)
 
         return string
-    
-    def update_schedule_by_date(self, date:str, schedule:str) -> None:
+
+    def update_schedule_by_date(self, date: str, schedule: str) -> None:
         log.info(f'Updatting schedule at {date}')
 
         sql = f'UPDATE arch SET schedule = ? WHERE date = "{date}";'
@@ -169,7 +173,7 @@ class guzDB:
         except Exception as e:
             log.exception('Updating failed')
 
-    def set_schedule_by_date(self, date:str, schedule:str) -> None:
+    def set_schedule_by_date(self, date: str, schedule: str) -> None:
         log.info(f'Setting schedule at {date}')
 
         sql = "INSERT INTO arch(date, schedule) VALUES(?, ?)"
@@ -182,7 +186,7 @@ class guzDB:
         except Exception as e:
             log.exception('Setting failed')
 
-    def get_schedule_by_date(self, date:str) -> str:
+    def get_schedule_by_date(self, date: str) -> str:
         log.debug(f'Getting schedule at {date}')
 
         sql = f"SELECT * FROM arch WHERE date = ?;"
@@ -195,13 +199,13 @@ class guzDB:
             return self.cur.fetchone()
         except Exception as e:
             log.exception('Getting failed')
-    
-    def get_group_schedule_by_date(self, date:str, group:int=0) -> str:
+
+    def get_group_schedule_by_date(self, date: str, group: int = 0) -> str:
         string = self.get_schedule_by_date(date)
 
         if string is None:
             return None
-        
+
         string = string[2]
 
         group_sch = ''
@@ -212,10 +216,10 @@ class guzDB:
 
             if len(need_s) > 0:
                 group_sch += f'Пара {timeToNum(t)} {t:<12} {need_s:<50}\n'
-        
+
         return group_sch
 
-    def load_default_schedule(self, filename:str):
+    def load_default_schedule(self, filename: str):
         schedule = Schedule()
         schedule.parse_schedule_file(filename)
 
@@ -223,9 +227,12 @@ class guzDB:
 
         for w, i in enumerate(week):
             year, month, day = i[0], i[1], i[2]
-            self.set_schedule_by_date(f'{day}-{month}-{year}', schedule.getByDay(w))
+            self.set_schedule_by_date(
+                f'{day}-{month}-{year}',
+                schedule.getByDay(w))
 
-def updateEveryWeek(dbase:guzDB):
+
+def updateEveryWeek(dbase: guzDB):
     log.info("Reloading the base")
 
     my_date = date.today()
@@ -235,7 +242,7 @@ def updateEveryWeek(dbase:guzDB):
         filename = '../data/upper.csv'
     else:
         filename = '../data/lower.csv'
-    
+
     log.info(f"Loading {filename} file")
 
     dbase.load_default_schedule(filename)
