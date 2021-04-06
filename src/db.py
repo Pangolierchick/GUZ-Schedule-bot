@@ -138,7 +138,7 @@ class guzDB:
             CREATE TABLE IF NOT EXISTS users (
             rowid INTEGER PRIMARY KEY,
             id INTEGER,
-            name TEXT NOT NULL,
+            name TEXT,
             group_id INTEGER);
             '''
 

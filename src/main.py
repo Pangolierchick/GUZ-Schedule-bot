@@ -183,8 +183,13 @@ def morning_send_schedule():
 
     for i in users:
         sch = dbase.get_today_schedule(i[3] - 1)
+        name = ', ' + i[2] + ','
+
+        if i[2] is None:
+            name = ', '
+
         bot.send_message(
-            i[1], f'Доброе утро, {i[2]}, твое расписание на сегодня:\n {sch}')
+            i[1], f'Доброе утро{name}твое расписание на сегодня:\n {sch}')
         time.sleep(2)
 
     log.info('Done morning schedule')
