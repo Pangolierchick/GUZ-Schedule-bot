@@ -40,13 +40,15 @@ def get_user_group(id):
 
 @bot.message_handler(commands=['help', 'start'])
 def help_handler(message):
-    help_msg = '''Привет!\nЭтот бот будет помогать будет присылать тебе расписание.\n
-    Комманды: /help вывести это сообщение.\n
-    /today (или можешь просто написать сегодня) покажет тебе сегодняшнее расписание.\n
-    /date выведет тебе расписание по дате (или можешь просто написать дату вроде 03.03.2021)\n
-    /change комманда, нужная чтобы изменить расписание какого-то числа (TODO)\n
-    /register регистрация пользователя\n
-    /unregister удаление аккаунта пользователя\n
+    help_msg = '''Привет!\nЭтот бот будет присылать тебе расписание.
+    Комманды: 
+    /help вывести это сообщение.
+    /today (или можешь просто написать сегодня) покажет тебе сегодняшнее расписание.
+    /date выведет тебе расписание по дате (или можешь просто написать дату вроде 03.03.2021)
+    /change комманда, нужная чтобы изменить расписание какого-то числа (TODO)
+    /register регистрация пользователя
+    /unregister удаление аккаунта пользователя
+    /info информация о создателе бота
 
     Также бот будет присылать тебе каждый будний день расписание на сегодня. (TODO: возможность отписаться от этого)
     '''
@@ -139,7 +141,7 @@ def register_user(message):
 
 @bot.message_handler(commands=['info'])
 def send_info(message):
-    bot.send_message(message.chat.id, f"Бот, написанный telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
+    bot.send_message(message.chat.id, f"Бот, написанный для вуза гуз, архитектурный факультет. Создатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
 
 
 def insert_user_into_base(message):
