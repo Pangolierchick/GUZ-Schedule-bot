@@ -9,6 +9,11 @@ def numToWeekDayStr(num:int):
 def timeToNum(time:str):
     return TIME_MAP[time]
 
+
+
+
+
+
 class ScheduleRecord:
     def __init__(self, b_time:str, e_time:str, subject_a:str, subject_b:str=None):
         self.b_time  = str(b_time)
