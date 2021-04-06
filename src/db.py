@@ -1,7 +1,7 @@
 import sqlite3
 import logging as log
 from calendar import Calendar
-from schedule import Schedule 
+from myschedule import Schedule 
 from datetime import date
 import time
 
@@ -39,6 +39,8 @@ class guzDB:
             self.create_arch_table()
             self.create_users_table()
 
+            self.isTableEmpty()
+
             guzDB.instance = self
         else:
             print("Error: this class is singleton")
@@ -46,7 +48,18 @@ class guzDB:
     def getInstance(self):
         return guzDB.instance
         
-    
+    def isTableEmpty(self):
+        sql = 'SELECT * FROM arch'
+
+        try:
+            self.cur.execute(sql)
+        except Exception as e:
+            log.exception("failed table emptyness checking")
+        
+        table = self.cur.fetchall()
+        if len(table) == 0:
+            updateEveryWeek(self)
+
     def connect_to_db(self):
         log.info('Connecting to base ...')
         try:
@@ -57,6 +70,27 @@ class guzDB:
     def get_cur(self):
         self.cur = self.dbase.cursor()
         return self.cur
+    
+    def get_all_users(self):
+        sql = f'SELECT * FROM users'
+
+        try:
+            self.cur.execute(sql)
+        except Exception as e:
+            log.exception(f"Get all users failed {str(e)}")
+        
+        return self.cur.fetchall()
+    
+    def delete_user(self, id):
+        log.info(f"Deleting user {id}")
+
+        sql = f'DELETE FROM users WHERE id = {id}'
+
+        try:
+            self.cur.execute(sql)
+            self.dbase.commit()
+        except:
+            log.exception("Inserting failed")
     
     def set_user(self, id, name, group):
         log.info(f"Inserting user {id}")
@@ -73,11 +107,11 @@ class guzDB:
         sql = f'SELECT * FROM users WHERE id = {id};'
 
         try:
-            self.cur.executescript(sql)
+            self.cur.execute(sql)
+            return self.cur.fetchone()
         except Exception as e:
             log.exception(f"Get user failed {str(e)}.")
         
-        return self.cur.fetchone()
     
     def create_arch_table(self):
         log.info("Creating arch table.")
@@ -112,13 +146,15 @@ class guzDB:
         
         self.dbase.commit()
     
-    def get_today_schedule(self):
+    def get_today_schedule(self, group=0):
         today = str(date.today()).split('-')
         year  = int(today[0])
         month = int(today[1])
         day   = int(today[2])
 
-        return self.get_schedule_by_date(f'{day}-{month}-{year}')
+        string = self.get_group_schedule_by_date(f'{day}-{month}-{year}', group)
+
+        return string
     
     def update_schedule_by_date(self, date:str, schedule:str) -> None:
         log.info(f'Updatting schedule at {date}')
@@ -147,7 +183,7 @@ class guzDB:
             log.exception('Setting failed')
 
     def get_schedule_by_date(self, date:str) -> str:
-        log.info(f'Getting schedule at {date}')
+        log.debug(f'Getting schedule at {date}')
 
         sql = f"SELECT * FROM arch WHERE date = ?;"
 
@@ -159,6 +195,25 @@ class guzDB:
             return self.cur.fetchone()
         except Exception as e:
             log.exception('Getting failed')
+    
+    def get_group_schedule_by_date(self, date:str, group:int=0) -> str:
+        string = self.get_schedule_by_date(date)
+
+        if string is None:
+            return None
+        
+        string = string[2]
+
+        group_sch = ''
+
+        for i in string.split(';'):
+            t, s = i.split(maxsplit=1)
+            need_s = s.split('|')[group].strip()
+
+            if len(need_s) > 0:
+                group_sch += f'{t:<12} {need_s:<50}\n'
+        
+        return group_sch
 
     def load_default_schedule(self, filename:str):
         schedule = Schedule()
@@ -166,25 +221,21 @@ class guzDB:
 
         week = getCurrentWeek()[:5]
 
-        print(week)
-
         for w, i in enumerate(week):
             year, month, day = i[0], i[1], i[2]
             self.set_schedule_by_date(f'{day}-{month}-{year}', schedule.getByDay(w))
 
-def updateEveryWeek(dbase:guzDB): # FIXME What if we reload in the middle of the week??
-    while True:
-        log.info("Reloading the base")
+def updateEveryWeek(dbase:guzDB):
+    log.info("Reloading the base")
 
-        my_date = date.today()
-        _, week_num, __ = my_date.isocalendar()
+    my_date = date.today()
+    _, week_num, __ = my_date.isocalendar()
 
-        if week_num % 2 == 0:
-            filename = '../data/upper.csv'
-        else:
-            filename = '../data/lower.csv'
-        
-        log.info(f"Loading {filename} file")
+    if week_num % 2 == 0:
+        filename = '../data/upper.csv'
+    else:
+        filename = '../data/lower.csv'
+    
+    log.info(f"Loading {filename} file")
 
-        dbase.load_default_schedule(filename)
-        time.sleep(604800) # every week
+    dbase.load_default_schedule(filename)

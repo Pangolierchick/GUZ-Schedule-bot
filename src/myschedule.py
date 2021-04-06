@@ -56,7 +56,7 @@ class ScheduleRecord:
         sa = sa.strip()
         sb = sb.strip()
 
-        return f'{self.b_time:>5}-{self.e_time:<5} {sa:70}\t{sb:50}'
+        return f'{self.b_time:>5}-{self.e_time:<5} {sa:70} | {sb:50}'
 
 class Schedule:
     def __init__(self):
