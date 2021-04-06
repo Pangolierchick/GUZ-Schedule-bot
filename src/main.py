@@ -23,6 +23,7 @@ bot = telebot.TeleBot(API_TOKEN)
 
 MY_VERSION = '2_alpha'
 
+
 def check_registration(id):
     user = dbase.get_user(id)
 
@@ -41,7 +42,7 @@ def get_user_group(id):
 @bot.message_handler(commands=['help', 'start'])
 def help_handler(message):
     help_msg = '''Привет!\nЭтот бот будет присылать тебе расписание.
-    Комманды: 
+    Комманды:
     /help вывести это сообщение.
     /today (или можешь просто написать сегодня) покажет тебе сегодняшнее расписание.
     /date выведет тебе расписание по дате (или можешь просто написать дату вроде 03.03.2021)
@@ -139,9 +140,12 @@ def register_user(message):
         reply_markup=markup)
     bot.register_next_step_handler(sent, insert_user_into_base)
 
+
 @bot.message_handler(commands=['info'])
 def send_info(message):
-    bot.send_message(message.chat.id, f"Бот, написанный для вуза гуз, архитектурный факультет. Создатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
+    bot.send_message(
+        message.chat.id,
+        f"Бот, написанный для вуза гуз, архитектурный факультет. Создатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
 
 
 def insert_user_into_base(message):
