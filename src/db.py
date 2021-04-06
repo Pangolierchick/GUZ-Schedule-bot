@@ -1,31 +1,6 @@
 import sqlite3
 import logging as log
-from calendar import Calendar
 from datetime import date
-
-def getCurrentWeek():
-    calendar = Calendar(0)
-
-    today = date.today()
-    week_day = today.weekday()
-    today = today.replace(day=today.day - week_day)
-
-    today = str(today.isoformat()).split('-')
-    year  = int(today[0])
-    month = int(today[1])
-    day   = int(today[2])
-
-    month_list = [i for i in calendar.itermonthdays3(year, month)]
-
-    week = []
-
-    for i, v in enumerate(month_list):
-        if (v[0] == year and v[1] == month and v[2] == day):
-            for k in range(5):
-                week.append(month_list[i + k])
-
-            return week
-
 
 class guzDB:
     instance = None
@@ -48,7 +23,7 @@ class guzDB:
         log.info('Connecting to base ...')
         try:
             self.dbase = sqlite3.connect(
-                '../data/guz_arch_schedule.db',
+                '../data/schedule_users.db',
                 check_same_thread=False)
         except Exception as e:
             log.exception(f'Connection to data base failed {str(e)}')
@@ -70,7 +45,7 @@ class guzDB:
     def delete_user(self, id):
         log.info(f"Deleting user {id}")
 
-        sql = f'DELETE FROM users WHERE id = {id}'
+        sql = f'DELETE FROM users WHERE chat_id = {id}'
 
         try:
             self.cur.execute(sql)
@@ -78,36 +53,44 @@ class guzDB:
         except BaseException:
             log.exception("Inserting failed")
 
-    def set_user(self, id, name, group, subgroup):
+    def set_user(self, id, name, group_name, subgroup):
         log.info(f"Inserting user {id}")
 
-        sql = 'INSERT INTO users(id, name, group, subgroup, last_message_time) VALUES(?, ?, ?, ?, ?)'
-
+        sql = 'INSERT INTO users(chat_id, name, group_name, subgroup, last_message_time) VALUES(?, ?, ?, ?, ?)'
 
         try:
-            self.cur.execute(sql, (id, name, group, subgroup, date.today().isoformat()))
+            self.cur.execute(sql, (id, name, group_name, subgroup, date.today().isoformat()))
             self.dbase.commit()
         except BaseException:
             log.exception("Inserting failed")
 
     def get_user(self, id):
-        sql = f'SELECT * FROM users WHERE id = {id};'
+        sql = f'SELECT * FROM users WHERE chat_id = {id};'
 
         try:
             self.cur.execute(sql)
             return self.cur.fetchone()
         except Exception as e:
             log.exception(f"Get user failed {str(e)}.")
+    
+    def update_time(self, id):
+        sql = f'UPDATE users SET last_message_time = {date.today().isoformat()} where id = {id}'
 
+        try:
+            self.cur.execute(sql)
+        except Exception as e:
+            log.exception("Time updating failed")
+        
+        self.dbase.commit()
 
     def create_users_table(self):
         log.info("Creating users table.")
         sql = '''
             CREATE TABLE IF NOT EXISTS users (
             rowid INTEGER PRIMARY KEY,
-            id INTEGER,
+            chat_id INTEGER,
             name TEXT,
-            group TEXT NOT NULL,
+            group_name TEXT NOT NULL,
             subgroup INTEGER,
             last_message_time TEXT NOT NULL);
             '''
@@ -115,6 +98,6 @@ class guzDB:
         try:
             self.cur.executescript(sql)
         except Exception as e:
-            log.exception("Creating table failed.")
+            log.exception(f"Creating table failed. {str(e)}")
 
         self.dbase.commit()

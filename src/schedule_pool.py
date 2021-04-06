@@ -1,5 +1,6 @@
 import myschedule
 import os
+import logging as log
 
 class SchedulePoolException(Exception):
     pass
@@ -23,7 +24,7 @@ class SchedulePool:
     LOWER = 0
     UPPER  = 1
     
-    def __init__(self, week_type:int):
+    def __init__(self, week_type:int=0):
         self.pool = {}
         self.week_type = int(week_type)
 
@@ -54,7 +55,7 @@ class SchedulePool:
         
         raise ScheduleFileNotFound(f'Schedule file with {file_suffix} suffix not found')
     
-    def load_schedule(self, groupname:str, subgroup:int) -> None:
+    def load_schedule(self, groupname:str, subgroup:int) -> myschedule.GroupSchedule:
         schedule_name = groupname + '_' + str(subgroup)
         
         if schedule_name not in self.pool:
@@ -67,10 +68,14 @@ class SchedulePool:
 
             self.pool[schedule_name] = schedule
 
+            log.info(f"Loaded another schedule. Current len: {len(self.pool)}")
+
             return schedule
     
     def get_schedule(self, group_name:str, subgroup:int) -> myschedule.GroupSchedule:
         schedule_name = group_name + '_' + str(subgroup)
+        log.debug(f'Getting schedule for {schedule_name}. Current week type: {self.week_type}')
+
         if schedule_name in self.pool:
             return self.pool[schedule_name]
         
@@ -84,3 +89,7 @@ class SchedulePool:
     
     def set_week_type(self, week_type:int):
         self.week_type = int(week_type)
+
+
+def poolUpdater(pool:SchedulePool):
+    pass

@@ -1,3 +1,6 @@
+from datetime import date
+
+
 HOLIDAY_STR = ['Holiday', 'Выходной']
 DAY_OF_WEEK_MAP_US = [
     'Monday',
@@ -139,6 +142,9 @@ class GroupSchedule:
 
     def get_day_at(self, dayn: int) -> DaySchedule:
         return self.schedule[WEEK_DAY_LOCALE[dayn]]
+    
+    def get_today(self) -> DaySchedule:
+        return self.get_day_at(date.today().weekday())
     
     def delete_day_at(self, dayn):
         self.set_day_at(None, dayn)
