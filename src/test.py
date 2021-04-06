@@ -8,8 +8,8 @@ import utils
 import schedule
 import time
 from datetime import date
-from config import API_TOKEN
 
+API_TOKEN = '1716037279:AAEg3jW-K9bY_Hsd7nRSwRevhLE1l8Bs8Xc'
 log.basicConfig(
     filename="../data/bot.log",
     level=log.INFO,
@@ -21,7 +21,7 @@ dbase = db.guzDB()
 bot = telebot.TeleBot(API_TOKEN)
 
 
-MY_VERSION = '2_alpha'
+MY_VERSION = '1_alpha'
 
 def check_registration(id):
     user = dbase.get_user(id)
@@ -38,18 +38,9 @@ def get_user_group(id):
     return user[3] - 1
 
 
-@bot.message_handler(commands=['help', 'start'])
+@bot.message_handler(commands=['help'])
 def help_handler(message):
-    help_msg = '''Привет!\nЭтот бот будет помогать будет присылать тебе расписание.\n
-    Комманды: /help вывести это сообщение.\n
-    /today (или можешь просто написать сегодня) покажет тебе сегодняшнее расписание.\n
-    /date выведет тебе расписание по дате (или можешь просто написать дату вроде 03.03.2021)\n
-    /change комманда, нужная чтобы изменить расписание какого-то числа (TODO)\n
-    /register регистрация пользователя\n
-    /unregister удаление аккаунта пользователя\n
-
-    Также бот будет присылать тебе каждый будний день расписание на сегодня. (TODO: возможность отписаться от этого)
-    '''
+    help_msg = 'Привет!'  # TODO help message
     bot.reply_to(message, help_msg)
 
 
