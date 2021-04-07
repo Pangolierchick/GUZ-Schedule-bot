@@ -49,11 +49,11 @@ def help_handler(message):
     Комманды:
     /help вывести это сообщение.
     /today (или можешь просто написать сегодня) покажет тебе сегодняшнее расписание.
-    /date выведет тебе расписание по дате (или можешь просто написать дату вроде 03.03.2021)
-    /change комманда, нужная чтобы изменить расписание какого-то числа (TODO)
+    Также ты можешь просто написать день недели и бот вышлет тебе расписание на этот день. Или ты можешь написать завтра.
     /register регистрация пользователя
     /unregister удаление аккаунта пользователя
     /info информация о создателе бота
+    
 
     Также бот будет присылать тебе каждый будний день расписание на сегодня. (TODO: возможность отписаться от этого)
     '''
@@ -74,9 +74,11 @@ def get_today_schedule_handler(message):
     try:
         schedule = sched_pool.get_schedule(group[3], group[4])
         bot.reply_to(message, str(schedule.get_today()))
+        dbase.update_time(message.chat.id)
     except Exception as e:
         log.error(f"Failed get schedule: {str(e)}")
         bot.reply_to(message, 'Не получилось.')
+    
 
 
 @bot.message_handler(commands=['change'])
@@ -98,6 +100,7 @@ def tomorrow_handler(message):
     try:
         schedule = sched_pool.get_schedule(user[3], user[4])
         bot.reply_to(message, str(schedule.get_day_at(tomorrow_weekday)))
+        dbase.update_time(message.chat.id)
     except Exception as e:
         log.error(f"Failed get schedule: {str(e)}")
         bot.reply_to(message, 'Не получилось.')
@@ -121,7 +124,7 @@ def register_user(message):
 def send_info(message):
     bot.send_message(
         message.chat.id,
-        f"Бот, написанный для вуза гуз, архитектурный факультет. Создатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
+        f"Бот, написанный для вуза гуз, архитектурный факультет. \nСоздатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
 
 
 def insert_user_into_base(message):
@@ -188,6 +191,7 @@ def schedule_at_week_day_handler(message):
     msg = sch.get_day_at(
         myschedule.STRING_NUM_WEEKDAY[message.text.capitalize()])
 
+    dbase.update_time(message.chat.id)
     bot.send_message(message.chat.id, msg)
 
 
