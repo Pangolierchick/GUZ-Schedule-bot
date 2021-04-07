@@ -25,7 +25,7 @@ sched_pool = SchedulePool(utils.get_week_type())
 bot = telebot.TeleBot(API_TOKEN)
 
 
-MY_VERSION = '4_alpha'
+MY_VERSION = '1_beta'
 
 
 def check_registration(id):
@@ -212,7 +212,7 @@ def schedule_checker():
 
 
 schedule.every().day.at("07:30").do(morning_send_schedule)
-# schedule.every().monday.at("05:30").do(db.updateEveryWeek, dbase=dbase)
+schedule.every().monday.at("05:30").do(sched_pool.clean_pool)
 
 threading.Thread(target=schedule_checker).start()
 
