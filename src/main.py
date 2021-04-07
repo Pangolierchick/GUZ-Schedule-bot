@@ -9,6 +9,9 @@ import schedule
 import time
 from datetime import date
 from config import API_TOKEN
+from schedule_pool import SchedulePool
+import myschedule
+import transliterate
 
 log.basicConfig(
     filename="../data/bot.log",
@@ -17,11 +20,12 @@ log.basicConfig(
     datefmt='[ %d-%m-%y %H:%M:%S ] ')
 
 dbase = db.guzDB()
+sched_pool = SchedulePool(utils.get_week_type())
 
 bot = telebot.TeleBot(API_TOKEN)
 
 
-MY_VERSION = '2_alpha'
+MY_VERSION = '1_beta'
 
 
 def check_registration(id):
@@ -59,7 +63,7 @@ def help_handler(message):
 @bot.message_handler(commands=['today'])
 @bot.message_handler(func=lambda msg: msg.text.lower() == 'сегодня')
 def get_today_schedule_handler(message):
-    group = get_user_group(message.from_user.id)
+    group = dbase.get_user(message.from_user.id)
 
     if group is None:
         bot.reply_to(
@@ -67,19 +71,12 @@ def get_today_schedule_handler(message):
             'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
         return
 
-    today = dbase.get_today_schedule(group)
-
-    if today is None:
+    try:
+        schedule = sched_pool.get_schedule(group[3], group[4])
+        bot.reply_to(message, str(schedule.get_today()))
+    except Exception as e:
+        log.error(f"Failed get schedule: {str(e)}")
         bot.reply_to(message, 'Не получилось.')
-        return
-
-    bot.reply_to(message, today)
-
-
-@bot.message_handler(commands=['date'])
-def get_schedule_by_date_handler(message):
-    sent = bot.reply_to(message, 'Напишите дату, пожалуйста')
-    bot.register_next_step_handler(sent, input_date_get_sch)
 
 
 @bot.message_handler(commands=['change'])
@@ -87,38 +84,23 @@ def set_schedule_by_date_handler(message):
     bot.send_message(message.chat.id, 'TODO_CHANGE')
 
 
-@bot.message_handler(regexp=r'\d+\.\d+\.\d+')
-def handle_message(message):
-    bot.reply_to(message, "Сейчас отправлю расписание.")
+@bot.message_handler(func=lambda msg: msg.text.capitalize() == 'Завтра')
+def tomorrow_handler(message):
+    user = dbase.get_user(message.from_user.id)
 
-    req = utils.format_time(message.text)
+    if user is None:
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
 
-    sch = dbase.get_group_schedule_by_date(req)
+    tomorrow_weekday = (date.today().weekday() + 1) % 7
 
-    if sch is None:
-        sch = "Не получилось."
-
-    bot.send_message(message.chat.id, sch)
-
-
-def input_date_get_sch(message):
-    text = message.text
-
-    if re.match(r'\d+\.\d+\.\d+', text):
-        req = utils.format_time(message.text)
-        group = get_user_group(message.from_user.id)
-
-        if (group is None):
-            bot.reply_to(
-                message,
-                'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
-            return
-
-        msg = dbase.get_group_schedule_by_date(req, group)
-
-    else:
-        msg = 'Неправильно указана дата, попробуйте еще раз'
-    bot.send_message(message.chat.id, msg)
+    try:
+        schedule = sched_pool.get_schedule(user[3], user[4])
+        bot.reply_to(message, str(schedule.get_day_at(tomorrow_weekday)))
+    except Exception as e:
+        log.error(f"Failed get schedule: {str(e)}")
+        bot.reply_to(message, 'Не получилось.')
 
 
 @bot.message_handler(commands=['register'])
@@ -129,15 +111,9 @@ def register_user(message):
         bot.send_message(message.chat.id, 'Вы уже зарегестрированы')
         return
 
-    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-    itembtn1 = types.KeyboardButton('1')
-    itembtn2 = types.KeyboardButton('2')
-    markup.row(itembtn1, itembtn2)
-
     sent = bot.send_message(
         message.chat.id,
-        'Выберите вашу группу: ',
-        reply_markup=markup)
+        'Напишите вашу группу с подгруппой через _ (Пример: 21A_1 или 21A_2)')
     bot.register_next_step_handler(sent, insert_user_into_base)
 
 
@@ -149,11 +125,32 @@ def send_info(message):
 
 
 def insert_user_into_base(message):
+    msg = message.text
+    try:
+        msg = transliterate.translit(message.text.upper(), reversed=True)
+    except BaseException:
+        pass
+
+    if not re.match(r'\d\d[A-Z]_\d', msg):
+        bot.send_message(message.chat.id, 'Неправильно указана группа.')
+        return
+
+    group, subgroup = msg.split('_')
+
+    try:
+        sched_pool.load_schedule(group, subgroup)
+    except Exception as e:
+        bot.send_message(
+            message.chat.id,
+            'К сожалению, расписание для вашей группы отсутствует.')
+        return
+
     dbase.set_user(
         message.from_user.id,
         message.from_user.username,
-        message.text)
-    bot.send_message(message.chat.id, 'Вы зарегестрированы')
+        group,
+        subgroup)
+    bot.send_message(message.chat.id, 'Вы были успешно зарегестрированы')
 
 
 @bot.message_handler(commands=['unregister'])
@@ -161,7 +158,9 @@ def un_register_user(message):
     user = dbase.get_user(message.from_user.id)
 
     if user is None:
-        bot.send_message(message.chat.id, 'Вы не зарегестрированы')
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
         return
 
     dbase.delete_user(message.from_user.id)
@@ -173,6 +172,25 @@ def force_morning(message):
     morning_send_schedule()
 
 
+@bot.message_handler(func=lambda msg: msg.text.capitalize()
+                     in myschedule.WEEK_DAY_LOCALE)
+def schedule_at_week_day_handler(message):
+    user = dbase.get_user(message.chat.id)
+
+    if user is None:
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
+        return
+
+    sch = sched_pool.get_schedule(user[3], user[4])
+
+    msg = sch.get_day_at(
+        myschedule.STRING_NUM_WEEKDAY[message.text.capitalize()])
+
+    bot.send_message(message.chat.id, msg)
+
+
 def morning_send_schedule():
     if date.today().weekday() > 4:
         log.info("It is holiday. We dont send schedule on its day.")
@@ -182,14 +200,19 @@ def morning_send_schedule():
     log.info(f'Sending morning schedule for {len(users)} users ...')
 
     for i in users:
-        sch = dbase.get_today_schedule(i[3] - 1)
+        try:
+            schedule = sched_pool.get_schedule(i[3], i[4])
+        except Exception as e:
+            log.error(f"Failed get schedule: {str(e)}")
+
+        sch = str(schedule.get_today())
         name = ', ' + i[2] + ','
 
         if i[2] is None:
             name = ', '
 
         bot.send_message(
-            i[1], f'Доброе утро{name}твое расписание на сегодня:\n {sch}')
+            i[1], f'Доброе утро{name}твое расписание на сегодня:\n\n {sch}')
         time.sleep(2)
 
     log.info('Done morning schedule')
@@ -202,7 +225,7 @@ def schedule_checker():
 
 
 schedule.every().day.at("07:30").do(morning_send_schedule)
-schedule.every().monday.at("05:30").do(db.updateEveryWeek, dbase=dbase)
+schedule.every().monday.at("05:30").do(sched_pool.clean_pool)
 
 threading.Thread(target=schedule_checker).start()
 
