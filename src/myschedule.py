@@ -72,7 +72,6 @@ class Subject:
         self.tutor = None
         self.classroom = None
 
-
         if tutor is not None:
             self.tutor = str(tutor).strip().capitalize()
 
@@ -86,10 +85,10 @@ class Subject:
         tutor = self.tutor
         classroom = self.classroom
 
-        if tutor == None:
+        if tutor is None:
             tutor = ''
 
-        if classroom == None:
+        if classroom is None:
             classroom = ''
 
         return f'{self.subject} {tutor} {classroom}'.strip()
@@ -142,10 +141,10 @@ class GroupSchedule:
 
     def get_day_at(self, dayn: int) -> DaySchedule:
         return self.schedule[WEEK_DAY_LOCALE[dayn]]
-    
+
     def get_today(self) -> DaySchedule:
         return self.get_day_at(date.today().weekday())
-    
+
     def delete_day_at(self, dayn):
         self.set_day_at(None, dayn)
 
@@ -153,7 +152,9 @@ class GroupSchedule:
         string = ''
         for i, v in self.schedule.items():
             if v is not None:
-                if i in (WEEK_DAY_LOCALE[5], WEEK_DAY_LOCALE[6]) and not self.print_holidays:
+                if i in (
+                        WEEK_DAY_LOCALE[5],
+                        WEEK_DAY_LOCALE[6]) and not self.print_holidays:
                     break
 
                 string += i + '\n'
@@ -171,7 +172,8 @@ class GroupSchedule:
                 day = DaySchedule()
 
                 for j in sch.split(';'):
-                    # 8:30-10:00 SUBJECT { | TUTOR | CLASSROOM} ; ... {} -- means optional
+                    # 8:30-10:00 SUBJECT { | TUTOR | CLASSROOM} ; ... {} --
+                    # means optional
                     time, sub_part = j.split(maxsplit=1)
                     sub_part = sub_part.split("|")
 
@@ -188,6 +190,6 @@ class GroupSchedule:
                     day, STRING_NUM_WEEKDAY[d.strip().capitalize()])
 
         return self
-    
+
     def print(self):
         print(str(self))

@@ -2,6 +2,7 @@ import sqlite3
 import logging as log
 from datetime import date
 
+
 class guzDB:
     instance = None
 
@@ -59,7 +60,8 @@ class guzDB:
         sql = 'INSERT INTO users(chat_id, name, group_name, subgroup, last_message_time) VALUES(?, ?, ?, ?, ?)'
 
         try:
-            self.cur.execute(sql, (id, name, group_name, subgroup, date.today().isoformat()))
+            self.cur.execute(
+                sql, (id, name, group_name, subgroup, date.today().isoformat()))
             self.dbase.commit()
         except BaseException:
             log.exception("Inserting failed")
@@ -72,7 +74,7 @@ class guzDB:
             return self.cur.fetchone()
         except Exception as e:
             log.exception(f"Get user failed {str(e)}.")
-    
+
     def update_time(self, id):
         sql = f'UPDATE users SET last_message_time = {date.today().isoformat()} where id = {id}'
 
@@ -80,7 +82,7 @@ class guzDB:
             self.cur.execute(sql)
         except Exception as e:
             log.exception("Time updating failed")
-        
+
         self.dbase.commit()
 
     def create_users_table(self):

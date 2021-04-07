@@ -83,13 +83,16 @@ def get_today_schedule_handler(message):
 def set_schedule_by_date_handler(message):
     bot.send_message(message.chat.id, 'TODO_CHANGE')
 
+
 @bot.message_handler(func=lambda msg: msg.text.capitalize() == 'Завтра')
 def tomorrow_handler(message):
     user = dbase.get_user(message.from_user.id)
 
     if user is None:
-        bot.send_message(message.chat.id, 'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
-    
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
+
     tomorrow_weekday = (date.today().weekday() + 1) % 7
 
     try:
@@ -100,7 +103,6 @@ def tomorrow_handler(message):
         bot.reply_to(message, 'Не получилось.')
 
 
-
 @bot.message_handler(commands=['register'])
 def register_user(message):
     user = dbase.get_user(message.from_user.id)
@@ -109,7 +111,9 @@ def register_user(message):
         bot.send_message(message.chat.id, 'Вы уже зарегестрированы')
         return
 
-    sent = bot.send_message(message.chat.id, 'Напишите вашу группу с подгруппой через _ (Пример: 21A_1 или 21A_2)')
+    sent = bot.send_message(
+        message.chat.id,
+        'Напишите вашу группу с подгруппой через _ (Пример: 21A_1 или 21A_2)')
     bot.register_next_step_handler(sent, insert_user_into_base)
 
 
@@ -124,10 +128,10 @@ def insert_user_into_base(message):
     msg = message.text
     try:
         msg = transliterate.translit(message.text.upper(), reversed=True)
-    except:
+    except BaseException:
         pass
 
-    if not re.match('\d\d[A-Z]_\d', msg):
+    if not re.match(r'\d\d[A-Z]_\d', msg):
         bot.send_message(message.chat.id, 'Неправильно указана группа.')
         return
 
@@ -136,7 +140,9 @@ def insert_user_into_base(message):
     try:
         sched_pool.load_schedule(group, subgroup)
     except Exception as e:
-        bot.send_message(message.chat.id, 'К сожалению, расписание для вашей группы отсутствует.')
+        bot.send_message(
+            message.chat.id,
+            'К сожалению, расписание для вашей группы отсутствует.')
         return
 
     dbase.set_user(
@@ -152,7 +158,9 @@ def un_register_user(message):
     user = dbase.get_user(message.from_user.id)
 
     if user is None:
-        bot.send_message(message.chat.id, 'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
         return
 
     dbase.delete_user(message.from_user.id)
@@ -164,19 +172,24 @@ def force_morning(message):
     morning_send_schedule()
 
 
-@bot.message_handler(func=lambda msg: msg.text.capitalize() in myschedule.WEEK_DAY_LOCALE)
+@bot.message_handler(func=lambda msg: msg.text.capitalize()
+                     in myschedule.WEEK_DAY_LOCALE)
 def schedule_at_week_day_handler(message):
     user = dbase.get_user(message.chat.id)
 
     if user is None:
-        bot.send_message(message.chat.id, 'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
+        bot.send_message(
+            message.chat.id,
+            'Вы не зарегестрированы. Напишите /register, чтобы зарегестрироваться')
         return
-    
+
     sch = sched_pool.get_schedule(user[3], user[4])
 
-    msg = sch.get_day_at(myschedule.STRING_NUM_WEEKDAY[message.text.capitalize()])
+    msg = sch.get_day_at(
+        myschedule.STRING_NUM_WEEKDAY[message.text.capitalize()])
 
     bot.send_message(message.chat.id, msg)
+
 
 def morning_send_schedule():
     if date.today().weekday() > 4:
@@ -191,7 +204,7 @@ def morning_send_schedule():
             schedule = sched_pool.get_schedule(i[3], i[4])
         except Exception as e:
             log.error(f"Failed get schedule: {str(e)}")
-    
+
         sch = str(schedule.get_today())
         name = ', ' + i[2] + ','
 
