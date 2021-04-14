@@ -210,10 +210,12 @@ def morning_send_schedule():
             log.error(f"Failed get schedule: {str(e)}")
 
         sch = str(schedule.get_today())
-        name = ', ' + i[2] + ','
-
+        
         if i[2] is None:
             name = ', '
+        else:
+            name = ', ' + i[2] + ','
+
 
         bot.send_message(
             i[1], f'Доброе утро{name}твое расписание на сегодня:\n\n {sch}')
