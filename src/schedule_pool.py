@@ -1,7 +1,7 @@
 import myschedule
 import os
 import logging as log
-
+import utils
 
 class SchedulePoolException(Exception):
     pass
@@ -99,7 +99,12 @@ class SchedulePool:
         pass
 
     def clean_pool(self):
+        log.info('Cleaning pool')
+    
         self.pool = {}
+        self.week_type = int(utils.get_week_type())
+    
+        log.info(f'Getting week type ... {self.week_type}')
 
     def set_week_type(self, week_type: int):
         self.week_type = int(week_type)

@@ -76,7 +76,7 @@ class guzDB:
             log.exception(f"Get user failed {str(e)}.")
 
     def update_time(self, id):
-        sql = f'UPDATE users SET last_message_time = {date.today().isoformat()} where id = {id}'
+        sql = f'UPDATE users SET last_message_time = {date.today().isoformat()} where chat_id = {id}'
 
         try:
             self.cur.execute(sql)
