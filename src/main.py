@@ -53,7 +53,7 @@ def help_handler(message):
     /register регистрация пользователя
     /unregister удаление аккаунта пользователя
     /info информация о создателе бота
-    
+
 
     Также бот будет присылать тебе каждый будний день расписание на сегодня. (TODO: возможность отписаться от этого)
     '''
@@ -78,7 +78,6 @@ def get_today_schedule_handler(message):
     except Exception as e:
         log.error(f"Failed get schedule: {str(e)}")
         bot.reply_to(message, 'Не получилось.')
-    
 
 
 @bot.message_handler(commands=['change'])
@@ -214,12 +213,11 @@ def morning_send_schedule():
             log.error(f"Failed get schedule: {str(e)}")
 
         sch = str(schedule.get_today())
-        
+
         if i[2] is None:
             name = ', '
         else:
             name = ', ' + i[2] + ','
-
 
         bot.send_message(
             i[1], f'Доброе утро{name}твое расписание на сегодня:\n\n {sch}')
