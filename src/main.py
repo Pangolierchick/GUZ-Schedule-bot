@@ -193,10 +193,12 @@ def schedule_at_week_day_handler(message):
     dbase.update_time(message.chat.id)
     bot.send_message(message.chat.id, msg)
 
+
 @bot.message_handler(commands=['clean'])
 def clean_handler(message):
     sched_pool.clean_pool()
     bot.send_message(message.chat.id, 'Pool has been cleaned')
+
 
 def morning_send_schedule():
     if date.today().weekday() > 4:
