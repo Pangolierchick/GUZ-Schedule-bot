@@ -15,33 +15,19 @@ import transliterate
 
 log.basicConfig(
     filename="../data/bot.log",
-    level=log.INFO,
+    level=log.DEBUG,
     format='%(asctime)s [ %(levelname)s ] %(message)s',
     datefmt='[ %d-%m-%y %H:%M:%S ] ')
 
 dbase = db.guzDB()
 sched_pool = SchedulePool(utils.get_week_type())
 
-bot = telebot.TeleBot(API_TOKEN)
+bot = telebot.AsyncTeleBot(API_TOKEN, threaded=False)
+
+lock = threading.Lock()
 
 
 MY_VERSION = '1_beta'
-
-
-def check_registration(id):
-    user = dbase.get_user(id)
-
-    return user is not None
-
-
-def get_user_group(id):
-    user = dbase.get_user(id)
-
-    if user is None:
-        return None
-
-    return user[3] - 1
-
 
 @bot.message_handler(commands=['help', 'start'])
 def help_handler(message):
@@ -63,7 +49,10 @@ def help_handler(message):
 @bot.message_handler(commands=['today'])
 @bot.message_handler(func=lambda msg: msg.text.lower() == 'сегодня')
 def get_today_schedule_handler(message):
-    group = dbase.get_user(message.from_user.id)
+    log.debug('Got <today> request.')
+
+    with lock:
+        group = dbase.get_user(message.from_user.id)
 
     if group is None:
         bot.reply_to(
@@ -82,12 +71,16 @@ def get_today_schedule_handler(message):
 
 @bot.message_handler(commands=['change'])
 def set_schedule_by_date_handler(message):
+    log.debug('Got <change> request')
+
     bot.send_message(message.chat.id, 'TODO_CHANGE')
 
 
 @bot.message_handler(func=lambda msg: msg.text.capitalize() == 'Завтра')
 def tomorrow_handler(message):
-    user = dbase.get_user(message.from_user.id)
+    log.debug('Got <tomorrow> request')
+    with lock:
+        user = dbase.get_user(message.from_user.id)
 
     if user is None:
         bot.send_message(
@@ -107,7 +100,9 @@ def tomorrow_handler(message):
 
 @bot.message_handler(commands=['register'])
 def register_user(message):
-    user = dbase.get_user(message.from_user.id)
+    log.debug('Got <register> request')
+    with lock:
+        user = dbase.get_user(message.from_user.id)
 
     if user is not None:
         bot.send_message(message.chat.id, 'Вы уже зарегестрированы')
@@ -121,6 +116,7 @@ def register_user(message):
 
 @bot.message_handler(commands=['info'])
 def send_info(message):
+    log.debug('Got <info> request')
     bot.send_message(
         message.chat.id,
         f"Бот, написанный для вуза гуз, архитектурный факультет. \nСоздатель: telegram: @pangolierchick (https://github.com/Pangolierchick/GUZ-Schedule-bot). Версия: {MY_VERSION}")
@@ -146,18 +142,20 @@ def insert_user_into_base(message):
             message.chat.id,
             'К сожалению, расписание для вашей группы отсутствует.')
         return
-
-    dbase.set_user(
-        message.from_user.id,
-        message.from_user.username,
-        group,
-        subgroup)
+    with lock:
+        dbase.set_user(
+            message.from_user.id,
+            message.from_user.username,
+            group,
+            subgroup)
     bot.send_message(message.chat.id, 'Вы были успешно зарегестрированы')
 
 
 @bot.message_handler(commands=['unregister'])
 def un_register_user(message):
-    user = dbase.get_user(message.from_user.id)
+    log.debug('Got <unregister> request')
+    with lock:
+        user = dbase.get_user(message.from_user.id)
 
     if user is None:
         bot.send_message(
@@ -171,13 +169,16 @@ def un_register_user(message):
 
 @bot.message_handler(commands=['force'])
 def force_morning(message):
+    log.debug('Got <force> request')
     morning_send_schedule()
 
 
 @bot.message_handler(func=lambda msg: msg.text.capitalize()
                      in myschedule.WEEK_DAY_LOCALE)
 def schedule_at_week_day_handler(message):
-    user = dbase.get_user(message.chat.id)
+    log.debug('Got <schedule at dat> request')
+    with lock:
+        user = dbase.get_user(message.chat.id)
 
     if user is None:
         bot.send_message(
@@ -186,16 +187,15 @@ def schedule_at_week_day_handler(message):
         return
 
     sch = sched_pool.get_schedule(user[3], user[4])
-
     msg = sch.get_day_at(
         myschedule.STRING_NUM_WEEKDAY[message.text.capitalize()])
-
-    dbase.update_time(message.chat.id)
+    # dbase.update_time(message.chat.id)
     bot.send_message(message.chat.id, msg)
 
 
 @bot.message_handler(commands=['clean'])
 def clean_handler(message):
+    log.debug('Got <clean> request')
     sched_pool.clean_pool()
     bot.send_message(message.chat.id, 'Pool has been cleaned')
 
@@ -205,7 +205,9 @@ def morning_send_schedule():
         log.info("It is holiday. We dont send schedule on its day.")
         return
 
-    users = dbase.get_all_users()
+    with lock:
+        users = dbase.get_all_users()
+
     log.info(f'Sending morning schedule for {len(users)} users ...')
 
     for i in users:
@@ -231,7 +233,7 @@ def morning_send_schedule():
 def schedule_checker():
     while True:
         schedule.run_pending()
-        time.sleep(2)
+        time.sleep(10)
 
 
 schedule.every().day.at("07:30").do(morning_send_schedule)
@@ -239,4 +241,4 @@ schedule.every().monday.at("05:30").do(sched_pool.clean_pool)
 
 threading.Thread(target=schedule_checker).start()
 
-bot.polling()
+bot.polling(none_stop=True, interval=0, timeout=5)

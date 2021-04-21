@@ -1,7 +1,7 @@
 import sqlite3
 import logging as log
 from datetime import date
-
+import threading
 
 class guzDB:
     instance = None
@@ -38,10 +38,9 @@ class guzDB:
 
         try:
             self.cur.execute(sql)
+            return self.cur.fetchall()
         except Exception as e:
             log.exception(f"Get all users failed {str(e)}")
-
-        return self.cur.fetchall()
 
     def delete_user(self, id):
         log.info(f"Deleting user {id}")
@@ -80,10 +79,10 @@ class guzDB:
 
         try:
             self.cur.execute(sql)
+            self.dbase.commit()
         except Exception as e:
             log.exception("Time updating failed")
 
-        self.dbase.commit()
 
     def create_users_table(self):
         log.info("Creating users table.")
@@ -99,7 +98,7 @@ class guzDB:
 
         try:
             self.cur.executescript(sql)
+            self.dbase.commit()
         except Exception as e:
             log.exception(f"Creating table failed. {str(e)}")
 
-        self.dbase.commit()
