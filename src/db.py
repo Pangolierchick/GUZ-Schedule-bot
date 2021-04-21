@@ -3,6 +3,7 @@ import logging as log
 from datetime import date
 import threading
 
+
 class guzDB:
     instance = None
 
@@ -83,7 +84,6 @@ class guzDB:
         except Exception as e:
             log.exception("Time updating failed")
 
-
     def create_users_table(self):
         log.info("Creating users table.")
         sql = '''
@@ -101,4 +101,3 @@ class guzDB:
             self.dbase.commit()
         except Exception as e:
             log.exception(f"Creating table failed. {str(e)}")
-
