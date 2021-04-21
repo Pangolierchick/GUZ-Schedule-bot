@@ -29,6 +29,7 @@ lock = threading.Lock()
 
 MY_VERSION = '1_beta'
 
+
 @bot.message_handler(commands=['help', 'start'])
 def help_handler(message):
     help_msg = '''Привет!\nЭтот бот будет присылать тебе расписание.
